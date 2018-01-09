@@ -2,7 +2,7 @@ class message:
     __header = ''
     __body = ''
     
-    def function(self, header: str, body: str) -> None:
+    def __init__(self, header: str, body: str) -> None:
         self.__header = header
         self.__body = body
         

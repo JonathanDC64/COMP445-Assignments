@@ -1,6 +1,7 @@
 import socket
+import message
 
-def req(host: str, port: str, msg: str) -> str:
+def req(host: str, port: str, msg: str) -> message:
     BUFFER = 2048
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -18,4 +19,13 @@ def req(host: str, port: str, msg: str) -> str:
                 response += packet
     finally:
         conn.close()
-    return response.decode("utf-8")
+        
+    # Seperate header and body in the response
+    resp = response.decode("utf-8")
+    seperator = resp.find('\r\n\r\n')
+    
+    header = resp[:seperator]
+    body = resp[seperator+4:]
+    
+    respmsg = message.message(header, body);
+    return respmsg
