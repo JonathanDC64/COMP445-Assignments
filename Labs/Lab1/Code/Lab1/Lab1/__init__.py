@@ -1,4 +1,7 @@
-import request
+import get
+import post
 
 host = 'httpbin.org'
-print(request.req(host, 80, f'GET /ip HTTP/1.0\r\nHost: {host}\r\n\r\n'))
+print(get.get(host, '/get?a=6&h=8&c=4'))
+print('\n\n\n')
+print(post.post(host, '/post', {'a': '6', 'h': '8', 'c': '4'}))

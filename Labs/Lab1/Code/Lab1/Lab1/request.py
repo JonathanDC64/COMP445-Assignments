@@ -16,7 +16,6 @@ def req(host: str, port: str, msg: str) -> str:
                 break
             else:
                 response += packet
-    
     finally:
         conn.close()
     return response.decode("utf-8")
