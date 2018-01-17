@@ -3,6 +3,8 @@ import get
 import post
 from urllib.parse import urlparse
 
+#Help messages for httpc.py -help, httpc.py -get -help, httpc.py -post - help
+
 HELP = """httpc is a curl-like application but supports HTTP protocol only.
 Usage:
     httpc command [arguments]
@@ -27,9 +29,9 @@ from file.
     
 Either [-d] or [-f] can be used but not both."""
 
-parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
 
-#parser.add_argument("action", help="Executes a HTTP GET or POST request and prints the response.", choices=['get', 'post', 'none'], default='none')
+#Arguments types for the command line argument parser
+parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
 parser.add_argument("-get", help="Executes a HTTP GET  request and prints the response.", action="store_true")
 parser.add_argument("-post", help="Executes a HTTP POST request and prints the response.", action="store_true")
 parser.add_argument("-help", help="Prints this screen.", action="store_true")
@@ -40,72 +42,93 @@ parser.add_argument("-f", help="Send body data from file.")
 parser.add_argument("-o", help="Write response to a file")
 parser.add_argument("URL", help="Determines the targeted HTTP server. It could contain parameters of the HTTP operation.", default='', nargs='?')
 
-#args = parser.parse_args(['post', '-v', 'httpbin.org/post', '-d', 'a=8'])
-#args = parser.parse_args(['get','-help'])
+#Get and validate the arguments
 args = parser.parse_args()
-#print(args)
 
+#Input URL
 url = args.URL
 
-#action = args.action
-
+#Get data for post request if any exists
 data = ''
+
+#Get data from command line input
 if args.d:
     data = args.d
+#Get data from file
 elif args.f:
     data = open(args.f).read()
-    
+
+#Output response to file if -o is specified    
 output = None
 if args.o:
     output = open(args.o,"w")
     
-
+#Parse the input URL into their components
 parsedurl = urlparse(url)
+
+#URL protocol
 scheme = parsedurl.scheme
+
+#Host/Domain name
 host = parsedurl.netloc
+
+#Path of request
 path = parsedurl.path
+
+#Query parameters
 query = parsedurl.query
 
-
+#if there are query paramaters, append them to the path for GET requests
 if query:
     path = path + '?' + query
 
+#Header options specified with -h (must be seperated with cariage return and new line)
 header = ''
 if args.h:
     header = '\r\n'.join(map(str,args.h))
-    
+
+#If the user inputed -help
 help = args.help
 
-response = ''
+#reponse object (type message)
+response = None
 
-#print(args)
-#print(parsedurl)
-
+#If the protocol of the url is not http or https, print error
 if help == False and (scheme != 'http' and scheme != 'https'):
     parser.print_usage()
     print("URL must contain either http or https protocol")
 else:
+    #GET request
     if args.get:
+        #If httpc.py -get -help
         if help:
             print(GET_HELP)
         else:
             response = get.get(host, path, header)
+    #POST request
     elif args.post:
+        #If httpc.py -post -help
         if help:
             print(POST_HELP)
         else:
             response = post.post(host, path, data, header)
+    #If httpc.py -help print general help message
     elif help:
         parser.print_usage()
         print(HELP)
     
+    #Output the response
     if not help:
+        #If -o is specified, output response to file
         if(args.o):
+            #output verbose data
             if args.v:
                 output.write(response.get_header())
             output.write(response.get_body())
             output.close()
+        #Output reponse to console
         else:
+            #output verbose data
             if args.v:
                 print(response.get_header())
             print(response.get_body())

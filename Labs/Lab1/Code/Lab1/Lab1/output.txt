@@ -1,12 +1,12 @@
 HTTP/1.0 200 OK
 Connection: keep-alive
 Server: meinheld/0.6.1
-Date: Wed, 17 Jan 2018 16:51:19 GMT
+Date: Wed, 17 Jan 2018 17:09:58 GMT
 Content-Type: application/json
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true
 X-Powered-By: Flask
-X-Processed-Time: 0.00239706039429
+X-Processed-Time: 0.00066614151001
 Content-Length: 290
 Via: 1.1 vegur{
   "args": {}, 

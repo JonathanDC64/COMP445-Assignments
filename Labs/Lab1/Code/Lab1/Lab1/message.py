@@ -1,3 +1,4 @@
+#Models a HTTP message to seperate header and body
 class message:
     __header = ''
     __body = ''
