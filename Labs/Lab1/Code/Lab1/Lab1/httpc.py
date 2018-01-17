@@ -8,9 +8,9 @@ httpc is a curl-like application but supports HTTP protocol only.
 Usage:
     httpc command [arguments]
 The commands are:
-    get executes a HTTP GET request and prints the response.
-    post executes a HTTP POST request and prints the response.
-    help prints this screen."""
+    -get executes a HTTP GET request and prints the response.
+    -post executes a HTTP POST request and prints the response.
+    -help prints this screen."""
     
 GET_HELP = """
 Usage: httpc get [-v] [-h key:value] URL
@@ -32,7 +32,7 @@ from file.
 Either [-d] or [-f] can be used but not both.
 """
 
-parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (get|post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
+parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
 
 #parser.add_argument("action", help="Executes a HTTP GET or POST request and prints the response.", choices=['get', 'post', 'none'], default='none')
 parser.add_argument("-get", help="Executes a HTTP GET  request and prints the response.", action="store_true")
