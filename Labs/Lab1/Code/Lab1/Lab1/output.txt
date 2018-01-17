@@ -1,0 +1,24 @@
+HTTP/1.0 200 OK
+Connection: keep-alive
+Server: meinheld/0.6.1
+Date: Wed, 17 Jan 2018 16:51:19 GMT
+Content-Type: application/json
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+X-Powered-By: Flask
+X-Processed-Time: 0.00239706039429
+Content-Length: 290
+Via: 1.1 vegur{
+  "args": {}, 
+  "data": "data1=10&data2=Hello World&data3=Bye64", 
+  "files": {}, 
+  "form": {}, 
+  "headers": {
+    "Connection": "close", 
+    "Content-Length": "38", 
+    "Host": "httpbin.org"
+  }, 
+  "json": null, 
+  "origin": "132.205.95.109", 
+  "url": "http://httpbin.org/post"
+}

@@ -3,8 +3,7 @@ import get
 import post
 from urllib.parse import urlparse
 
-HELP = """
-httpc is a curl-like application but supports HTTP protocol only.
+HELP = """httpc is a curl-like application but supports HTTP protocol only.
 Usage:
     httpc command [arguments]
 The commands are:
@@ -12,16 +11,13 @@ The commands are:
     -post executes a HTTP POST request and prints the response.
     -help prints this screen."""
     
-GET_HELP = """
-Usage: httpc get [-v] [-h key:value] URL
+GET_HELP = """Usage: httpc get [-v] [-h key:value] URL
 Get executes a HTTP GET request for a given URL.
     -v Prints the detail of the response such as protocol,
 status, and headers.
-    -h key:value Associates headers to HTTP Request with the format 'key:value'.
-"""
+    -h key:value Associates headers to HTTP Request with the format 'key:value'."""
 
-POST_HELP = """
-Usage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL
+POST_HELP = """Usage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL
 Post executes a HTTP POST request for a given URL with inline data or
 from file.
     -v Prints the detail of the response such as protocol, status, and headers.
@@ -29,8 +25,7 @@ from file.
     -d string Associates an inline data to the body HTTP POST request.
     -f file Associates the content of a file to the body HTTP POST request.
     
-Either [-d] or [-f] can be used but not both.
-"""
+Either [-d] or [-f] can be used but not both."""
 
 parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
 
@@ -42,6 +37,7 @@ parser.add_argument("-v", help="Prints all the status, and its headers, then the
 parser.add_argument("-h", help="Passes the headers value to your HTTP operation", action='append')
 parser.add_argument("-d", help="Gives the user the possibility to associate the body of the HTTP Request with the inline data,")
 parser.add_argument("-f", help="Send body data from file.")
+parser.add_argument("-o", help="Write response to a file")
 parser.add_argument("URL", help="Determines the targeted HTTP server. It could contain parameters of the HTTP operation.", default='', nargs='?')
 
 #args = parser.parse_args(['post', '-v', 'httpbin.org/post', '-d', 'a=8'])
@@ -56,6 +52,13 @@ url = args.URL
 data = ''
 if args.d:
     data = args.d
+elif args.f:
+    data = open(args.f).read()
+    
+output = None
+if args.o:
+    output = open(args.o,"w")
+    
 
 parsedurl = urlparse(url)
 scheme = parsedurl.scheme
@@ -93,10 +96,16 @@ else:
         else:
             response = post.post(host, path, data, header)
     elif help:
+        parser.print_usage()
         print(HELP)
     
     if not help:
-        if args.v:
-            print(response.get_header())
-        print(response.get_body())
-    
+        if(args.o):
+            if args.v:
+                output.write(response.get_header())
+            output.write(response.get_body())
+            output.close()
+        else:
+            if args.v:
+                print(response.get_header())
+            print(response.get_body())
