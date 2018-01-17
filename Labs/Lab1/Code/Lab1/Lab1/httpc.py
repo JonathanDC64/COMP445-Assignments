@@ -15,9 +15,10 @@ The commands are:
     
 GET_HELP = """Usage: httpc get [-v] [-h key:value] URL
 Get executes a HTTP GET request for a given URL.
-    -v Prints the detail of the response such as protocol,
-status, and headers.
-    -h key:value Associates headers to HTTP Request with the format 'key:value'."""
+    -v Prints the detail of the response such as protocol, status, and headers.
+    -h key:value Associates headers to HTTP Request with the format 'key:value'.
+    -o output response to the specified file."""
+
 
 POST_HELP = """Usage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL
 Post executes a HTTP POST request for a given URL with inline data or
@@ -26,12 +27,13 @@ from file.
     -h key:value Associates headers to HTTP Request with the format 'key:value'.
     -d string Associates an inline data to the body HTTP POST request.
     -f file Associates the content of a file to the body HTTP POST request.
+    -o output response to the specified file.
     
 Either [-d] or [-f] can be used but not both."""
 
 
 #Arguments types for the command line argument parser
-parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f file] URL')
+parser = argparse.ArgumentParser(add_help=False, usage='httpc.py (-get|-post) [-v] (-h "k:v")* [-d inline-data] [-f input_file] [-o output_file] URL')
 parser.add_argument("-get", help="Executes a HTTP GET  request and prints the response.", action="store_true")
 parser.add_argument("-post", help="Executes a HTTP POST request and prints the response.", action="store_true")
 parser.add_argument("-help", help="Prints this screen.", action="store_true")
