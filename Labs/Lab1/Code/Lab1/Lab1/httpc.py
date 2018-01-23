@@ -13,14 +13,14 @@ The commands are:
     -post executes a HTTP POST request and prints the response.
     -help prints this screen."""
     
-GET_HELP = """Usage: httpc get [-v] [-h key:value] URL
+GET_HELP = """Usage: httpc.py -get [-v] [-h key:value] URL
 Get executes a HTTP GET request for a given URL.
     -v Prints the detail of the response such as protocol, status, and headers.
     -h key:value Associates headers to HTTP Request with the format 'key:value'.
     -o output response to the specified file."""
 
 
-POST_HELP = """Usage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL
+POST_HELP = """Usage: httpc.py -post [-v] [-h key:value] [-d inline-data] [-f file] URL
 Post executes a HTTP POST request for a given URL with inline data or
 from file.
     -v Prints the detail of the response such as protocol, status, and headers.
