@@ -27,7 +27,7 @@ def req(host: str, port: str, msg: str) -> message:
         conn.close()
         
     #Seperate header and body in the response (delimited by \r\n\r\n)
-    resp = response.decode("utf-8")
+    resp = str(response, errors='replace')
     seperator = resp.find('\r\n\r\n')
     header = resp[:seperator]
     body = resp[seperator+4:]
