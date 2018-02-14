@@ -80,11 +80,11 @@ path = parsedurl.path
 #Query parameters
 query = parsedurl.query
 
-#if there are query paramaters, append them to the path for GET requests
+#if there are query parameters, append them to the path for GET requests
 if query:
     path = path + '?' + query
 
-#Header options specified with -h (must be seperated with cariage return and new line)
+#Header options specified with -h (must be seperated with carriage return and new line)
 header = ''
 if args.h:
     header = '\r\n'.join(map(str,args.h))
@@ -92,13 +92,17 @@ if args.h:
 #If the user inputed -help
 help = args.help
 
-#reponse object (type message)
+#response object (type message)
 response = None
 
 #If the protocol of the url is not http or https, print error
 if help == False and (scheme != 'http' and scheme != 'https'):
     parser.print_usage()
     print("URL must contain either http or https protocol")
+#No post or get entered
+elif help == False and args.get == False and args.post == False:
+    parser.print_usage()
+    print("You must specify either the -get or -post option")
 else:
     #GET request
     if args.get:
@@ -117,7 +121,7 @@ else:
     #If httpc.py -help print general help message
     elif help:
         parser.print_usage()
-        print(HELP)
+        print(HELP)    
     
     #Output the response
     if not help:
@@ -125,7 +129,7 @@ else:
         if(args.o):
             #output verbose data
             if args.v:
-                output.write(response.get_header())
+                output.write(response.get_header() + "\r\n\r\n")
             output.write(response.get_body())
             output.close()
         #Output reponse to console
