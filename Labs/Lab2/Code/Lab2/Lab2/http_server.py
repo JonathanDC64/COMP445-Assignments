@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 
+LOCALHOST = ''
 HTTP_PORT = 80;
 BUFFER = 4096
 ROOT_DIRECTORY = 'public'
@@ -11,43 +12,45 @@ RESPONSE_CODES = {
         '404': 'Not Found'
     }
 
-def run_server(host):
-    init()
+def run_server(host = LOCALHOST, port = HTTP_PORT, verbose = False, directory = ROOT_DIRECTORY):
+    init(directory)
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        listener.bind((host, HTTP_PORT))
+        listener.bind((host, port))
         listener.listen()
         print('HTTP server is listening at ', HTTP_PORT)
         while True:
             conn, addr = listener.accept()
-            threading.Thread(target=handle_client, args=(conn, addr)).start()
+            threading.Thread(target=handle_client, args=(conn, addr, verbose, directory)).start()
     finally:
         listener.close()
 
-def init():
+def init(directory):
     # create server directory if it doesnt exists
     try:
-        if not os.path.exists(ROOT_DIRECTORY):
-            os.makedirs(ROOT_DIRECTORY)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
     except OSError:
-        print ('Error: Creating directory. ' +  ROOT_DIRECTORY)
+        print ('Error: Creating directory. ' +  directory)
 
 
-def handle_client(conn, addr):
-    print(f'New client from {addr}')
+def handle_client(conn, addr, verbose, directory):
+    if verbose:
+        print(f'New client from {addr}')
     try:
         while True:
             data = conn.recv(BUFFER)
             if not data:
                 break
             
-            process_data(conn, data)
+            process_data(conn, data, directory)
             
     finally:
-        print(f'Connection closed from {addr}')
+        if verbose:
+            print(f'Connection closed from {addr}')
         conn.close()
 
-def process_data(conn, data):
+def process_data(conn, data, directory):
     seperator = data.find(b' ')
     
     req_type = data[:seperator].decode('utf-8')
@@ -58,15 +61,10 @@ def process_data(conn, data):
     
     path = data[:seperator].decode('utf-8')
     
-    full_path = ROOT_DIRECTORY + path
+    full_path = directory + path
     
     if path != '/' :
         path = path + '/'
-        
-    
-        
-    
-    
     
     data = data[seperator + 1:]
     
@@ -112,5 +110,3 @@ def generate_response(code, body):
         f'Connection: Closed\r\n\r\n' + body
         
     
-
-run_server('')
