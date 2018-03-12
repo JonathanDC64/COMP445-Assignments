@@ -1,6 +1,8 @@
 import socket
 import threading
 import os
+from filelock import FileLock
+from queue import Full
 
 LOCALHOST = ''
 HTTP_PORT = 80;
@@ -50,6 +52,7 @@ def handle_client(conn, addr, verbose, directory):
             print(f'Connection closed from {addr}')
         conn.close()
 
+
 def process_data(conn, data, directory):
     seperator = data.find(b' ')
     
@@ -94,13 +97,15 @@ def process_data(conn, data, directory):
         response = generate_response(code, html_body).encode()
         conn.sendall(response)
     elif req_type == 'POST':
-        if os.path.isfile(full_path):
-            os.remove(full_path)
-        output = open(full_path,"w")
-        output.write(body)
-        output.close()
-        response = generate_response(code, '').encode()
-        conn.sendall(response)
+        #Lock the file
+        with FileLock(full_path):
+            if os.path.isfile(full_path):
+                os.remove(full_path)
+            output = open(full_path,"w")
+            output.write(body)
+            output.close()
+            response = generate_response(code, '').encode()
+            conn.sendall(response)
     
 def generate_response(code, body):
     print(body)

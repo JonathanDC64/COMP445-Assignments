@@ -1,6 +1,5 @@
 import argparse
 import http_server
-from test.test_decimal import directory
 
 parser = argparse.ArgumentParser(add_help=False, usage=' httpfs.py [-v] [-p PORT] [-d PATH-TO-DIR]')
 parser.add_argument("-v", help="Prints debugging messages.", action='store_true')
