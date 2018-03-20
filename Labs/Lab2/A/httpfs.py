@@ -22,7 +22,7 @@ mutex = threading.Lock()
 buf = 2048		
 def handle_client(conn, addr, v, d):
 	if v:
-		print(f'Incomming client from ' + addr)
+		print(f'Incomming client from ' + str(addr))
 	try:
 		while True:
 			data = conn.recv(buf)
@@ -76,7 +76,7 @@ def handle_client(conn, addr, v, d):
 				
 	finally:
 		if v:
-			print('Client closed connection from ' + addr)
+			print('Client closed connection from ' + str(addr))
 		conn.close()
 		
 parser = argparse.ArgumentParser()
@@ -87,4 +87,4 @@ args = parser.parse_args()
 v = args.v
 p = args.p if args.p else 80
 d = args.d if args.d else 'root'
-run_server('', p, v, d)	
+run_server('', int(p), v, d)	
