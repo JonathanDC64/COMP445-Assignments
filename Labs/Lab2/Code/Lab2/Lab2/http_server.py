@@ -22,7 +22,7 @@ def run_server(host = LOCALHOST, port = HTTP_PORT, verbose = False, directory = 
     try:
         listener.bind((host, port))
         listener.listen()
-        print('HTTP server is listening at ', HTTP_PORT)
+        print('HTTP server is listening at ', port)
         while True:
             conn, addr = listener.accept()
             threading.Thread(target=handle_client, args=(conn, addr, verbose, directory)).start()
