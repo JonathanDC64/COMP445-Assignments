@@ -54,7 +54,9 @@ def handle_client(conn, addr, verbose, directory):
                 cl = int(d[:d.find(b"\r")])
                 if len(data[data.find(b"\r\n\r\n") + len("\r\n\r\n"):]) < cl:
                     data += conn.recv(cl)
-            process_data(conn, data, directory)
+            response = process_data(conn, data, directory)
+            if verbose:
+                print(f'Response sent to {addr} : {response}')
             
     finally:
         if verbose:
@@ -90,24 +92,30 @@ def process_data(conn, data, directory):
     code = '200'
     
     if req_type == 'GET':
-        html_body = '<html><body>';
+        html_body = ''
+        ctype = 'text/html'
         if os.path.isdir(full_path):
+            html_body = '<html><body>';
             html_body += f'</br><h1>Contents of Directory: {path}</h1></br>'
             files = os.listdir(full_path)
             html_body += '<ul>'
             for file in files:
                 html_body += f'<li><a href=\"{path}{file}\">{file}</a></li>'
             html_body += '</ul>'
+            html_body += '</body></html>'
         elif os.path.isfile(full_path):
-            html_body += f'</br><h1>Contents of File: {path}</h1></br>'
+            #html_body += f'</br><h1>Contents of File: {path}</h1></br>'
+            ctype = 'text/plain'
             with lock:
                 html_body += open(full_path, 'r').read()
         else:
             code = '404'
             html_body += f'<h1>{code} {RESPONSE_CODES[code]}</h1>'
-        html_body += '</body></html>'
-        response = generate_response(code, html_body).encode()
+        
+        response = generate_response(code, html_body, ctype).encode()
         conn.sendall(response)
+        return html_body
+        
     elif req_type == 'POST':
         #Lock the file
         with lock:
@@ -117,13 +125,14 @@ def process_data(conn, data, directory):
             output.close()
         response = generate_response(code, '').encode()
         conn.sendall(response)
+        return ''
+    return ''
         
     
-def generate_response(code, body):
-    print(body)
+def generate_response(code, body, ctype='text\html'):
     return f'HTTP/1.0 {code} {RESPONSE_CODES[code]}\r\n' + \
         f'Content-Length: {len(body)}\r\n' + \
-        f'Content-Type: text\html\r\n' + \
+        f'Content-Type: {ctype}\r\n' + \
         f'Content-Disposition: inline\r\n' +\
         f'Connection: Closed\r\n\r\n' + body
         
