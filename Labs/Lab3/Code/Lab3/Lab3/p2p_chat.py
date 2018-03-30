@@ -12,14 +12,14 @@ def init(ip_address='127.0.0.1', port = 8080):
     
 def sender(user_name, ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
     while True:
         user_message = input()
         application_message = build_message(user_message, user_name)
-        s.sendto(application_message.encode(), (ip_address, port))
+        s.sendto(application_message.encode(), ('255.255.255.255', port))
     
 def receiver(port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
     s.bind(('',port))
     while True:
         application_message = s.recv(4096)
