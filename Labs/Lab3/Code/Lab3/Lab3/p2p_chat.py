@@ -36,7 +36,7 @@ def sender(user_name, ip_address, port):
     
 def receiver(port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('',port))
+    s.bind((' ',port))
     users = []
     while True:
         application_message = s.recv(4096)
