@@ -8,7 +8,9 @@ commands = {
         'NONE' : 0,
         'TALK' : 1,
         'JOIN' : 2,
-        'LEAVE': 3
+        'LEAVE': 3,
+        'WHO'  : 4,
+        'QUIT' : 5
     }
 
 def init(ip_address='127.0.0.1', port = 8080):
@@ -18,6 +20,7 @@ def init(ip_address='127.0.0.1', port = 8080):
     
 def sender(user_name, ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
     application_message = build_message('/JOIN', user_name)
     broadcast(s, port, application_message)
@@ -28,11 +31,13 @@ def sender(user_name, ip_address, port):
         except EOFError:
             return
         application_message = build_message(user_message, user_name)
+        command = parse_command(application_message)[1]
         broadcast(s, port, application_message)
     
 def receiver(port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('',port))
+    users = []
     while True:
         application_message = s.recv(4096)
         
@@ -50,9 +55,13 @@ def receiver(port):
                 
             elif user_command == commands['JOIN']:
                 msg = f'{user_name} joined!'
+                users.append(user_name)
                 
             elif user_command == commands['LEAVE']:
                 msg = f'{user_name} left!'
+            
+            elif user_command == commands['WHO']:
+                msg = str(users)
                 
             print(f'{timestamp} {msg}')
         
