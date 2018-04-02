@@ -11,11 +11,12 @@ commands = {
         'LEAVE': 3,
         'WHO'  : 4,
         'QUIT' : 5,
-        'PING' : 6
+        'PING' : 6,
+        'PRIVATE-TALK' : 7
     }
 
 terminate = False
-users = set()
+users = {}
 sem = threading.Semaphore(value=0)
 
 def init(ip_address='', port = 8080):
@@ -44,7 +45,9 @@ def sender(user_name, ip_address, port):
             return
         
         application_message = build_message(user_message, user_name)
-        user_command = parse_command(user_message)[0]
+        
+        # Command and message seperated
+        user_command, msg = parse_command(user_message)
         
 
         if user_command == commands['LEAVE']:
@@ -53,6 +56,12 @@ def sender(user_name, ip_address, port):
             
         elif user_command == commands['WHO']:
             unicast(s, port, application_message, ip_address)
+            
+        elif user_command == commands['PRIVATE-TALK']:
+            words = msg.split(' ')
+            user = words[0];
+            msg = ' '.join(words[1:])
+            unicast(s, port, build_message(f'/PRIVATE-TALK {msg}', user_name), users[user])
         
         else:
             broadcast(s, port, application_message)
@@ -82,12 +91,12 @@ def receiver(user_name, ip_address, port):
                 
             elif user_command == commands['JOIN']:
                 print_msg(f'{recv_user_name} joined!')
-                users.add(recv_user_name)
+                users.add[recv_user_name] = addr[0]
                 unicast(s, port, build_message('/PING', user_name), addr[0])
                 
             elif user_command == commands['LEAVE']:
                 print_msg(f'{recv_user_name} left!')
-                users.remove(recv_user_name)
+                users.pop(recv_user_name, None)
             
             elif user_command == commands['WHO']:
                 print_msg(f'Connected users: {str(users)}')
@@ -97,7 +106,10 @@ def receiver(user_name, ip_address, port):
                 terminate = True
             
             elif user_command == commands['PING']:
-                users.add(recv_user_name)
+                users.add[recv_user_name] = addr[0]
+                
+            elif user_command == commands['PRIVATE-TALK']:
+                print_msg(f'[{recv_user_name}] (PRIVATE): {user_message}')
                 
 
 def unicast(socket, port, message, ip_address):
