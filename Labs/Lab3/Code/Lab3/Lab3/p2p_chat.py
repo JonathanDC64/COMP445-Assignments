@@ -12,7 +12,7 @@ commands = {
         'WHO'  : 4,
         'QUIT' : 5,
         'PING' : 6,
-        'PRIVATE-TALK' : 7
+        'PRIVATE' : 7
     }
 
 terminate = False
@@ -57,11 +57,11 @@ def sender(user_name, ip_address, port):
         elif user_command == commands['WHO']:
             unicast(s, port, application_message, ip_address)
             
-        elif user_command == commands['PRIVATE-TALK']:
+        elif user_command == commands['PRIVATE']:
             words = msg.split(' ')
             user = words[0];
             msg = ' '.join(words[1:])
-            unicast(s, port, build_message(f'/PRIVATE-TALK {msg}', user_name), users[user])
+            unicast(s, port, build_message(f'/PRIVATE {msg}', user_name), users[user])
         
         else:
             broadcast(s, port, application_message)
@@ -91,7 +91,7 @@ def receiver(user_name, ip_address, port):
                 
             elif user_command == commands['JOIN']:
                 print_msg(f'{recv_user_name} joined!')
-                users.add[recv_user_name] = addr[0]
+                users[recv_user_name] = addr[0]
                 unicast(s, port, build_message('/PING', user_name), addr[0])
                 
             elif user_command == commands['LEAVE']:
@@ -106,9 +106,9 @@ def receiver(user_name, ip_address, port):
                 terminate = True
             
             elif user_command == commands['PING']:
-                users.add[recv_user_name] = addr[0]
+                users[recv_user_name] = addr[0]
                 
-            elif user_command == commands['PRIVATE-TALK']:
+            elif user_command == commands['PRIVATE']:
                 print_msg(f'[{recv_user_name}] (PRIVATE): {user_message}')
                 
 
