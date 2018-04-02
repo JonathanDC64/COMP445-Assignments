@@ -16,16 +16,20 @@ commands = {
 
 terminate = False
 users = set()
+sem = threading.Semaphore(value=0)
 
 def init(ip_address='', port = 8080):
     user_name = input('Enter your name: ')
-    threading.Thread(target=sender, args=(user_name, ip_address, port)).start()
-    threading.Thread(target=receiver, args=(ip_address, port)).start()
+    threading.Thread(target=sender,     args=(user_name, ip_address, port)).start()
+    threading.Thread(target=receiver,   args=(user_name, ip_address, port)).start()
+    
     
 def sender(user_name, ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
+    global sem
+    sem.acquire()
     application_message = build_message('/JOIN', user_name)
     broadcast(s, port, application_message)
     global terminate
@@ -54,32 +58,36 @@ def sender(user_name, ip_address, port):
             broadcast(s, port, application_message)
 
 
-def receiver(ip_address, port):
+def receiver(user_name, ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((ip_address,port))
     global terminate
     global users
+    global sem
+    sem.release()
     while True:
         if terminate == True:
             quit()
+        
         application_message, addr = s.recvfrom(4096)
-        print(f'RECEIVED FROM: {addr}')
-        (user_name,user_command,user_message) = parse_message(application_message)
+        #print(f'RECEIVED FROM: {addr}')
+        (recv_user_name,user_command,user_message) = parse_message(application_message)
         
         user_command = int(user_command)
         
         if user_command != commands['NONE']:
             if user_command == commands['TALK']:
-                print_msg(f'[{user_name}]: {user_message}')
+                print_msg(f'[{recv_user_name}]: {user_message}')
                 
             elif user_command == commands['JOIN']:
-                print_msg(f'{user_name} joined!')
-                users.add(user_name)
+                print_msg(f'{recv_user_name} joined!')
+                users.add(recv_user_name)
+                unicast(s, port, build_message('/PING', user_name), addr[0])
                 
             elif user_command == commands['LEAVE']:
-                print_msg(f'{user_name} left!')
-                users.remove(user_name)
+                print_msg(f'{recv_user_name} left!')
+                users.remove(recv_user_name)
             
             elif user_command == commands['WHO']:
                 print_msg(f'Connected users: {str(users)}')
@@ -87,6 +95,9 @@ def receiver(ip_address, port):
             elif user_command == commands['QUIT']:
                 print('Bye now!')
                 terminate = True
+            
+            elif user_command == commands['PING']:
+                users.add(recv_user_name)
                 
 
 def unicast(socket, port, message, ip_address):
