@@ -1,8 +1,8 @@
+import sys
 import threading
 import socket
 import datetime
 import time
-from enum import Enum
 
 commands = {
         'NONE' : 0,
@@ -10,13 +10,17 @@ commands = {
         'JOIN' : 2,
         'LEAVE': 3,
         'WHO'  : 4,
-        'QUIT' : 5
+        'QUIT' : 5,
+        'PING' : 6
     }
 
-def init(ip_address='127.0.0.1', port = 8080):
+terminate = False
+users = set()
+
+def init(ip_address='', port = 8080):
     user_name = input('Enter your name: ')
     threading.Thread(target=sender, args=(user_name, ip_address, port)).start()
-    threading.Thread(target=receiver, args=(port,)).start()
+    threading.Thread(target=receiver, args=(ip_address, port)).start()
     
 def sender(user_name, ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -24,47 +28,70 @@ def sender(user_name, ip_address, port):
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
     application_message = build_message('/JOIN', user_name)
     broadcast(s, port, application_message)
+    global terminate
     while True:
+        if terminate == True:
+            quit()
+            
         user_message = ''
         try:
             user_message = input()
         except EOFError:
             return
+        
         application_message = build_message(user_message, user_name)
-        command = parse_command(application_message)[1]
-        broadcast(s, port, application_message)
-    
-def receiver(port):
+        user_command = parse_command(user_message)[0]
+        
+
+        if user_command == commands['LEAVE']:
+            broadcast(s, port, application_message)
+            unicast(s, port, build_message('/QUIT', user_name), ip_address)
+            
+        elif user_command == commands['WHO']:
+            unicast(s, port, application_message, ip_address)
+        
+        else:
+            broadcast(s, port, application_message)
+
+
+def receiver(ip_address, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind((' ',port))
-    users = []
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((ip_address,port))
+    global terminate
+    global users
     while True:
-        application_message = s.recv(4096)
-        
+        if terminate == True:
+            quit()
+        application_message, addr = s.recvfrom(4096)
+        print(f'RECEIVED FROM: {addr}')
         (user_name,user_command,user_message) = parse_message(application_message)
-        
-        timestamp = st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        
-        msg = ''
         
         user_command = int(user_command)
         
         if user_command != commands['NONE']:
             if user_command == commands['TALK']:
-                msg = f'[{user_name}]: {user_message}'
+                print_msg(f'[{user_name}]: {user_message}')
                 
             elif user_command == commands['JOIN']:
-                msg = f'{user_name} joined!'
-                users.append(user_name)
+                print_msg(f'{user_name} joined!')
+                users.add(user_name)
                 
             elif user_command == commands['LEAVE']:
-                msg = f'{user_name} left!'
+                print_msg(f'{user_name} left!')
+                users.remove(user_name)
             
             elif user_command == commands['WHO']:
-                msg = str(users)
+                print_msg(f'Connected users: {str(users)}')
                 
-            print(f'{timestamp} {msg}')
-        
+            elif user_command == commands['QUIT']:
+                print('Bye now!')
+                terminate = True
+                
+
+def unicast(socket, port, message, ip_address):
+    socket.sendto(message.encode(), (ip_address, port))
+       
 def broadcast(socket, port, message):
     socket.sendto(message.encode(), ('255.255.255.255', port))
         
@@ -100,4 +127,11 @@ def parse_command(user_message):
         return command, message
     else:
         return commands['TALK'], user_message
-init()
+
+def print_msg(msg):
+    print(f'{timestamp()} {msg}')
+    
+def timestamp():
+    return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    
+init(sys.argv[1] if len(sys.argv) > 1 else '')
