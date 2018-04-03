@@ -5,19 +5,21 @@ import datetime
 import time
 
 commands = {
-        'NONE' : 0,
-        'TALK' : 1,
-        'JOIN' : 2,
-        'LEAVE': 3,
-        'WHO'  : 4,
-        'QUIT' : 5,
-        'PING' : 6,
-        'PRIVATE' : 7
+        'NONE'      : 0,
+        'TALK'      : 1,
+        'JOIN'      : 2,
+        'LEAVE'     : 3,
+        'WHO'       : 4,
+        'QUIT'      : 5,
+        'PING'      : 6,
+        'PRIVATE'   : 7,
+        'CHANNEL'   : 8
     }
 
 terminate = False
 users = {}
 sem = threading.Semaphore(value=0)
+my_channel = 'general'
 
 def init(ip_address='', port = 8080):
     user_name = input('Enter your name: ')
@@ -30,10 +32,12 @@ def sender(user_name, ip_address, port):
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
     global sem
-    sem.acquire()
-    application_message = build_message('/JOIN', user_name)
-    broadcast(s, port, application_message)
+    global my_channel
     global terminate
+    sem.acquire()
+    application_message = build_message('/JOIN', user_name, my_channel)
+    broadcast(s, port, application_message)
+    
     while True:
         if terminate == True:
             quit()
@@ -44,7 +48,7 @@ def sender(user_name, ip_address, port):
         except EOFError:
             return
         
-        application_message = build_message(user_message, user_name)
+        application_message = build_message(user_message, user_name, my_channel)
         
         # Command and message seperated
         user_command, msg = parse_command(user_message)
@@ -52,7 +56,7 @@ def sender(user_name, ip_address, port):
 
         if user_command == commands['LEAVE']:
             broadcast(s, port, application_message)
-            unicast(s, port, build_message('/QUIT', user_name), ip_address)
+            unicast(s, port, build_message('/QUIT', user_name, my_channel), ip_address)
             
         elif user_command == commands['WHO']:
             unicast(s, port, application_message, ip_address)
@@ -61,7 +65,11 @@ def sender(user_name, ip_address, port):
             words = msg.split(' ')
             user = words[0];
             msg = ' '.join(words[1:])
-            unicast(s, port, build_message(f'/PRIVATE {msg}', user_name), users[user])
+            unicast(s, port, build_message(f'/PRIVATE {msg}', user_name, my_channel), ip_address)
+            unicast(s, port, build_message(f'/PRIVATE {msg}', user_name, my_channel), users[user])
+
+        elif user_command == commands['CHANNEL']:
+            unicast(s, port, application_message, ip_address)
         
         else:
             broadcast(s, port, application_message)
@@ -74,6 +82,7 @@ def receiver(user_name, ip_address, port):
     global terminate
     global users
     global sem
+    global my_channel
     sem.release()
     while True:
         if terminate == True:
@@ -81,35 +90,38 @@ def receiver(user_name, ip_address, port):
         
         application_message, addr = s.recvfrom(4096)
         #print(f'RECEIVED FROM: {addr}')
-        (recv_user_name,user_command,user_message) = parse_message(application_message)
+        (recv_user_name,user_command,user_message, user_channel) = parse_message(application_message)
         
         user_command = int(user_command)
         
-        if user_command != commands['NONE']:
-            if user_command == commands['TALK']:
-                print_msg(f'[{recv_user_name}]: {user_message}')
-                
-            elif user_command == commands['JOIN']:
-                print_msg(f'{recv_user_name} joined!')
-                users[recv_user_name] = addr[0]
-                unicast(s, port, build_message('/PING', user_name), addr[0])
-                
-            elif user_command == commands['LEAVE']:
-                print_msg(f'{recv_user_name} left!')
-                users.pop(recv_user_name, None)
+        if user_command == commands['TALK'] and user_channel == my_channel:
+            print_msg(f'[{recv_user_name} #{my_channel}]: {user_message}')
+
+        elif user_command == commands['JOIN']:
+            print_msg(f'{recv_user_name} joined!')
+            users[recv_user_name] = addr[0]
+            unicast(s, port, build_message('/PING', user_name, my_channel), addr[0])
             
-            elif user_command == commands['WHO']:
-                print_msg(f'Connected users: {str(users)}')
-                
-            elif user_command == commands['QUIT']:
-                print('Bye now!')
-                terminate = True
+        elif user_command == commands['LEAVE']:
+            print_msg(f'{recv_user_name} left!')
+            users.pop(recv_user_name, None)
+        
+        elif user_command == commands['WHO']:
+            print_msg(f'Connected users: {str(users)}')
             
-            elif user_command == commands['PING']:
-                users[recv_user_name] = addr[0]
-                
-            elif user_command == commands['PRIVATE']:
-                print_msg(f'[{recv_user_name}] (PRIVATE): {user_message}')
+        elif user_command == commands['QUIT']:
+            print('Bye now!')
+            terminate = True
+        
+        elif user_command == commands['PING']:
+            users[recv_user_name] = addr[0]
+            
+        elif user_command == commands['PRIVATE']:
+            print_msg(f'[{recv_user_name}] (PRIVATE): {user_message}')
+
+        elif user_command == commands['CHANNEL']:
+            my_channel = user_message
+            print_msg(f'Switched to channel {my_channel}')
                 
 
 def unicast(socket, port, message, ip_address):
@@ -118,9 +130,9 @@ def unicast(socket, port, message, ip_address):
 def broadcast(socket, port, message):
     socket.sendto(message.encode(), ('255.255.255.255', port))
         
-def build_message(user_message, user_name):
+def build_message(user_message, user_name, user_channel='general'):
     cmd, msg = parse_command(user_message)
-    return f'user:{user_name}\ncommand:{cmd}\nmessage:{msg}\n\n'
+    return f'user:{user_name}\ncommand:{cmd}\nmessage:{msg}\nchannel:{user_channel}\n\n'
 
 def parse_message(application_message):
     application_message = application_message.decode()
@@ -128,7 +140,8 @@ def parse_message(application_message):
     user = lines[0].split(':')
     command = lines[1].split(':')
     message = lines[2].split(':')
-    return user[1], command[1], message[1]
+    channel = lines[3].split(':')
+    return user[1], command[1], message[1], channel[1]
 
 def parse_command(user_message):
     if user_message[0] == '/':
