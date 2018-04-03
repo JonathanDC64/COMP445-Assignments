@@ -13,7 +13,8 @@ commands = {
         'QUIT'      : 5,
         'PING'      : 6,
         'PRIVATE'   : 7,
-        'CHANNEL'   : 8
+        'CHANNEL'   : 8,
+        'DUP'       : 9
     }
 
 terminate = False
@@ -98,9 +99,13 @@ def receiver(user_name, ip_address, port):
             print_msg(f'[{recv_user_name} #{my_channel}]: {user_message}')
 
         elif user_command == commands['JOIN']:
-            print_msg(f'{recv_user_name} joined!')
-            users[recv_user_name] = addr[0]
-            unicast(s, port, build_message('/PING', user_name, my_channel), addr[0])
+            #username already exists
+            if recv_user_name in users.keys():
+                unicast(s, port, build_message('/DUP', user_name, my_channel), addr[0])
+            else:
+                print_msg(f'{recv_user_name} joined!')    
+                users[recv_user_name] = addr[0]
+                unicast(s, port, build_message('/PING', user_name, my_channel), addr[0])
             
         elif user_command == commands['LEAVE']:
             print_msg(f'{recv_user_name} left!')
@@ -122,6 +127,10 @@ def receiver(user_name, ip_address, port):
         elif user_command == commands['CHANNEL']:
             my_channel = user_message
             print_msg(f'Switched to channel {my_channel}')
+
+        elif user_command == commands['DUP']:
+            print('The chosen username already exists. Please restart the program and choose again.')
+            terminate = True
                 
 
 def unicast(socket, port, message, ip_address):
@@ -144,7 +153,7 @@ def parse_message(application_message):
     return user[1], command[1], message[1], channel[1]
 
 def parse_command(user_message):
-    if user_message[0] == '/':
+    if len(user_message) > 0 and user_message[0] == '/':
         d = user_message.find(' ')
         command = ''
         message = ''
