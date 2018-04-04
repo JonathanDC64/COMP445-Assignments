@@ -1,20 +1,24 @@
-import datetime
+from datetime import datetime
 import sys
 import threading
 import socket
 
-start()
+
 
 chn = 'general'
 BROADCAST = '255.255.255.255'
+joined = False
+ready = False
 
 def receiver(username, ip, port):
     global users
     global chn
+    global ready
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((ip,port))
     BUFFER = 2048
     while True:
+        ready = True
         formatted_message, addr = s.recvfrom(BUFFER)
         (msg_username, cmd, channel, msg) = parse_message(formatted_message)
         time = datetime.now().strftime("%H:%M:%S")
@@ -47,15 +51,18 @@ def receiver(username, ip, port):
 
 def sender(username, ip, port):
     global chn
+    global joined
+    global ready
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    joined = False
+    while not ready:
+        pass
     while True:
         if not joined:
             formatted_message = build_message('/join', username, chn)
             send_to_all(s, port, formatted_message)
             joined = True       
-        message = input('')        
+        message = input()        
         formatted_message = build_message(message, username, chn)        
         msg = ''
         cmd = ''
@@ -83,13 +90,13 @@ def build_message(message, user_name, user_channel='general'):
     command = ''
     if message[0] == '/': 
         if message.find(' ') > 0:
-            message = msg[message.find(' ')+1:]
-            command = msg[1:message.find(' ')]
+            command = message[1:message.find(' ')]
+            message = message[message.find(' ')+1:]
         else:
-            command = msg[1:]
+            command = message[1:]
     else:
         command =  'talk'
-    return 'user:' + user_name + '\ncommand:' + cmd + '\nchannel:' + user_channel +'\nmessage:' + msg + '\n\n'
+    return 'user:' + user_name + '\ncommand:' + command + '\nchannel:' + user_channel +'\nmessage:' + message + '\n\n'
 
 def parse_message(formatted_message):
     seperations = formatted_message.decode().split('\n')
@@ -115,6 +122,6 @@ def start(ip = '', port = 1337):
     sender_thread.start()
     receiver_thread.start()
 
-
+start()
 
 
